@@ -21,7 +21,8 @@ try
         .Services.AddPersistenceServices(builder.Configuration)
         .AddApplicationServices()
         .AddIdentityServices(builder.Configuration)
-        .AddOpenApi();
+        .AddOpenApi()
+        .AddPresentationServices();
 
     var app = builder.Build();
 
