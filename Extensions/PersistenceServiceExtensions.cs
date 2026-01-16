@@ -1,3 +1,7 @@
+using Microsoft.EntityFrameworkCore;
+using ExulofraApi.Infrastructure.Persistence;
+using ExulofraApi.Infrastructure.Persistence.Interceptors;
+
 namespace ExulofraApi.Extensions;
 
 public static class DatabaseExtension
@@ -7,6 +11,21 @@ public static class DatabaseExtension
         IConfiguration config
     )
     {
+        services.AddScoped<AuditInterceptor>();
+        services.AddScoped<SoftDeleteInterceptor>();
+
+        services.AddDbContext<AppDbContext>(
+            (sp, options) =>
+            {
+                var auditInterceptor = sp.GetRequiredService<AuditInterceptor>();
+                var softDeleteInterceptor = sp.GetRequiredService<SoftDeleteInterceptor>();
+
+                options
+                    .UseInMemoryDatabase("ExulofraDb")
+                    .AddInterceptors(auditInterceptor, softDeleteInterceptor);
+            }
+        );
+
         return services;
     }
 }
