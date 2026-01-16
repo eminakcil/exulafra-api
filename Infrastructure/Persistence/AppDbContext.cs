@@ -3,11 +3,16 @@ namespace ExulofraApi.Infrastructure.Persistence;
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using ExulofraApi.Common.Abstractions;
+using ExulofraApi.Common.Entities;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
+    public DbSet<User> Users => Set<User>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder);
+
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
             if (typeof(ISoftDelete).IsAssignableFrom(entityType.ClrType))
@@ -21,5 +26,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 modelBuilder.Entity(entityType.ClrType).HasQueryFilter(lambda);
             }
         }
+
+        modelBuilder.Entity<User>(builder =>
+        {
+            builder.HasIndex(u => u.Email).IsUnique();
+        });
     }
 }
