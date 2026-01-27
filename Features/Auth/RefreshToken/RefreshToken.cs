@@ -1,33 +1,32 @@
-using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using ExulofraApi.Common.Abstractions;
 using ExulofraApi.Common.Models;
 using ExulofraApi.Extensions;
 using ExulofraApi.Infrastructure.Persistence;
-using BC = BCrypt.Net.BCrypt;
 
-namespace ExulofraApi.Features.Auth.Login;
+namespace ExulofraApi.Features.Auth;
 
-public record LoginCommand(string Email, string Password) : IRequest<Result<TokenResponse>>;
+public record RefreshTokenCommand(string AccessToken, string RefreshToken)
+    : IRequest<Result<TokenResponse>>;
 
-public class LoginHandler(AppDbContext context, IJwtProvider jwtProvider)
-    : IRequestHandler<LoginCommand, Result<TokenResponse>>
+public class RefreshTokenHandler(AppDbContext context, IJwtProvider jwtProvider)
+    : IRequestHandler<RefreshTokenCommand, Result<TokenResponse>>
 {
     public async Task<Result<TokenResponse>> Handle(
-        LoginCommand request,
+        RefreshTokenCommand request,
         CancellationToken cancellationToken
     )
     {
         var user = await context.Users.FirstOrDefaultAsync(
-            u => u.Email == request.Email,
+            u => u.RefreshToken == request.RefreshToken,
             cancellationToken
         );
 
-        if (user is null || !BC.Verify(request.Password, user.PasswordHash))
+        if (user is null || user.RefreshTokenExpiryTime <= DateTimeOffset.UtcNow)
         {
             return Result<TokenResponse>.Failure(
-                Error.Unauthorized("Geçersiz e-posta veya şifre.")
+                Error.Unauthorized("Oturum süresi dolmuş, lütfen tekrar giriş yapın.")
             );
         }
 
@@ -42,22 +41,13 @@ public class LoginHandler(AppDbContext context, IJwtProvider jwtProvider)
     }
 }
 
-public class LoginValidator : AbstractValidator<LoginCommand>
-{
-    public LoginValidator()
-    {
-        RuleFor(x => x.Email).NotEmpty().EmailAddress();
-        RuleFor(x => x.Password).NotEmpty().MinimumLength(6);
-    }
-}
-
-public class LoginEndpoint : IEndpoint
+public class RefreshTokenEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
         app.MapPost(
-                "auth/login",
-                async (LoginCommand command, ISender sender) =>
+                "auth/refresh-token",
+                async (RefreshTokenCommand command, ISender sender) =>
                 {
                     var result = await sender.Send(command);
                     return result.ToActionResult();
