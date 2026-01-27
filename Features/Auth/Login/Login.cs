@@ -2,6 +2,8 @@ using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using ExulofraApi.Common.Abstractions;
+using ExulofraApi.Common.Models;
+using ExulofraApi.Extensions;
 using ExulofraApi.Infrastructure.Persistence;
 using BC = BCrypt.Net.BCrypt;
 
@@ -9,12 +11,12 @@ namespace ExulofraApi.Features.Auth.Login;
 
 public record LoginResponse(string Token);
 
-public record LoginCommand(string Email, string Password) : IRequest<LoginResponse>;
+public record LoginCommand(string Email, string Password) : IRequest<Result<LoginResponse>>;
 
 public class LoginHandler(AppDbContext context, IJwtProvider jwtProvider)
-    : IRequestHandler<LoginCommand, LoginResponse>
+    : IRequestHandler<LoginCommand, Result<LoginResponse>>
 {
-    public async Task<LoginResponse> Handle(
+    public async Task<Result<LoginResponse>> Handle(
         LoginCommand request,
         CancellationToken cancellationToken
     )
@@ -26,11 +28,13 @@ public class LoginHandler(AppDbContext context, IJwtProvider jwtProvider)
 
         if (user is null || !BC.Verify(request.Password, user.PasswordHash))
         {
-            throw new UnauthorizedAccessException("Geçersiz e-posta veya şifre.");
+            return Result<LoginResponse>.Failure(
+                Error.Unauthorized("Geçersiz e-posta veya şifre.")
+            );
         }
 
         var token = jwtProvider.Generate(user);
-        return new LoginResponse(token);
+        return Result<LoginResponse>.Success(new LoginResponse(token));
     }
 }
 
@@ -51,8 +55,8 @@ public class LoginEndpoint : IEndpoint
                 "auth/login",
                 async (LoginCommand command, ISender sender) =>
                 {
-                    var response = await sender.Send(command);
-                    return Results.Ok(response);
+                    var result = await sender.Send(command);
+                    return result.ToActionResult();
                 }
             )
             .WithTags("Authentication");

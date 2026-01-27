@@ -1,18 +1,30 @@
 using FluentValidation;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using ExulofraApi.Common.Abstractions;
 using ExulofraApi.Common.Entities;
+using ExulofraApi.Common.Models;
+using ExulofraApi.Extensions;
 using ExulofraApi.Infrastructure.Persistence;
 using BC = BCrypt.Net.BCrypt;
 
 namespace ExulofraApi.Features.Auth.Register;
 
-public record RegisterCommand(string Email, string Password) : IRequest<Guid>;
+public record RegisterCommand(string Email, string Password) : IRequest<Result<Guid>>;
 
-public class RegisterHandler(AppDbContext context) : IRequestHandler<RegisterCommand, Guid>
+public class RegisterHandler(AppDbContext context) : IRequestHandler<RegisterCommand, Result<Guid>>
 {
-    public async Task<Guid> Handle(RegisterCommand request, CancellationToken cancellationToken)
+    public async Task<Result<Guid>> Handle(
+        RegisterCommand request,
+        CancellationToken cancellationToken
+    )
     {
+        var exists = await context.Users.AnyAsync(u => u.Email == request.Email, cancellationToken);
+        if (exists)
+        {
+            return Result<Guid>.Failure(Error.Conflict("Bu e-posta adresi zaten kullanımda."));
+        }
+
         var user = new User
         {
             Id = Guid.NewGuid(),
@@ -24,7 +36,7 @@ public class RegisterHandler(AppDbContext context) : IRequestHandler<RegisterCom
         context.Users.Add(user);
         await context.SaveChangesAsync(cancellationToken);
 
-        return user.Id;
+        return Result<Guid>.Success(user.Id);
     }
 }
 
@@ -45,8 +57,8 @@ public class RegisterEndpoint : IEndpoint
                 "auth/register",
                 async (RegisterCommand command, ISender sender) =>
                 {
-                    var userId = await sender.Send(command);
-                    return Results.Ok(userId);
+                    var result = await sender.Send(command);
+                    return result.ToActionResult();
                 }
             )
             .WithTags("Authentication");
