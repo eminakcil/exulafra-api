@@ -1,7 +1,10 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using ExulofraApi.Common.Abstractions;
+using ExulofraApi.Common.Authorization;
+using ExulofraApi.Common.Constants;
 using ExulofraApi.Infrastructure.Authentication;
 
 namespace ExulofraApi.Extensions;
@@ -25,6 +28,9 @@ public static class IdentityServicesExtension
 
         services.AddScoped<IJwtProvider, JwtProvider>();
 
+        services.AddSingleton<IAuthorizationHandler, PermissionAuthorizationHandler>();
+        services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
+
         services
             .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
@@ -41,7 +47,11 @@ public static class IdentityServicesExtension
                     ),
                 }
             );
-        services.AddAuthorization();
+
+        services.AddAuthorization(options =>
+        {
+            options.AddPolicy("AdminOnly", policy => policy.RequireRole(Roles.Admin));
+        });
 
         return services;
     }

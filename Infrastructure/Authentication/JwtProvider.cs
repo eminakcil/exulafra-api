@@ -5,6 +5,7 @@ using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using ExulofraApi.Common.Abstractions;
+using ExulofraApi.Common.Constants;
 using ExulofraApi.Common.Entities;
 
 namespace ExulofraApi.Infrastructure.Authentication;
@@ -15,12 +16,22 @@ public class JwtProvider(IOptions<JwtOptions> options) : IJwtProvider
 
     public TokenResponse Generate(User user)
     {
-        var claims = new Claim[]
+        var permissions =
+            user.Role == "Admin"
+                ? new[] { Permissions.UserRead, Permissions.UserWrite, Permissions.UserDelete }
+                : new[] { Permissions.UserDelete };
+
+        var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new(JwtRegisteredClaimNames.Email, user.Email),
-            // Buraya Rol vb. ek claimler ekleyebilirsin
+            new(ClaimTypes.Role, user.Role),
         };
+
+        foreach (var permission in permissions)
+        {
+            claims.Add(new Claim("permissions", permission));
+        }
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Key));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

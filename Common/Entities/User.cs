@@ -1,4 +1,5 @@
 using ExulofraApi.Common.Abstractions;
+using ExulofraApi.Common.Constants;
 
 namespace ExulofraApi.Common.Entities;
 
@@ -9,4 +10,5 @@ public sealed class User : BaseEntity
 
     public string? RefreshToken { get; set; }
     public DateTimeOffset? RefreshTokenExpiryTime { get; set; }
+    public string Role { get; set; } = Roles.User;
 }

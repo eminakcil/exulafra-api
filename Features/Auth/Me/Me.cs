@@ -6,7 +6,7 @@ using ExulofraApi.Extensions;
 
 namespace ExulofraApi.Features.Auth.Me;
 
-public record GetMeResponse(Guid Id, string Email);
+public record GetMeResponse(Guid Id, string Email, string Role);
 
 public record GetMeQuery() : IRequest<Result<GetMeResponse>>;
 
@@ -27,8 +27,9 @@ public class GetMeHandler(IHttpContextAccessor httpContextAccessor)
 
         var userId = Guid.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var email = user.FindFirstValue(ClaimTypes.Email)!;
+        var role = user.FindFirstValue(ClaimTypes.Role)!;
 
-        var response = new GetMeResponse(userId, email);
+        var response = new GetMeResponse(userId, email, role);
 
         return await Task.FromResult(Result<GetMeResponse>.Success(response));
     }
