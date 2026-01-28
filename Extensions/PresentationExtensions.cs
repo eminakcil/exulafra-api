@@ -32,6 +32,7 @@ public static class PresentationExtensions
         app.UseHttpsRedirection();
 
         app.UseAuthentication();
+        app.UseRateLimiter();
         app.UseAuthorization();
 
         app.MapEndpoints();

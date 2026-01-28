@@ -63,6 +63,7 @@ public class LoginEndpoint : IEndpoint
                     return result.ToActionResult();
                 }
             )
-            .WithTags("Authentication");
+            .WithTags("Authentication")
+            .RequireRateLimiting("auth-limit");
     }
 }
