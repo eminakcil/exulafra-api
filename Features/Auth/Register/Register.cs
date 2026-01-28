@@ -2,9 +2,9 @@ using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using ExulofraApi.Common.Abstractions;
+using ExulofraApi.Common.Extensions;
 using ExulofraApi.Common.Models;
 using ExulofraApi.Domain.Entities;
-using ExulofraApi.Extensions;
 using ExulofraApi.Infrastructure.Persistence;
 using BC = BCrypt.Net.BCrypt;
 

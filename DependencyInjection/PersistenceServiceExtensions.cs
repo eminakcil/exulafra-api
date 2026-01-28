@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using ExulofraApi.Infrastructure.Persistence;
 using ExulofraApi.Infrastructure.Persistence.Interceptors;
 
-namespace ExulofraApi.Extensions;
+namespace ExulofraApi.DependencyInjection;
 
 public static class DatabaseExtension
 {

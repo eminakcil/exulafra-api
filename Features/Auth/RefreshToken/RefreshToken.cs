@@ -1,8 +1,8 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using ExulofraApi.Common.Abstractions;
+using ExulofraApi.Common.Extensions;
 using ExulofraApi.Common.Models;
-using ExulofraApi.Extensions;
 using ExulofraApi.Infrastructure.Persistence;
 
 namespace ExulofraApi.Features.Auth;

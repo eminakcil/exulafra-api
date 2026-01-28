@@ -1,5 +1,5 @@
 using Serilog;
-using ExulofraApi.Extensions;
+using ExulofraApi.DependencyInjection;
 
 Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateBootstrapLogger();
 

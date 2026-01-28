@@ -1,6 +1,6 @@
 using ExulofraApi.Common.Models;
 
-namespace ExulofraApi.Extensions;
+namespace ExulofraApi.Common.Extensions;
 
 public static class ResultExtensions
 {

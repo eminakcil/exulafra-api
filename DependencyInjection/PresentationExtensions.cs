@@ -5,7 +5,7 @@ using Scalar.AspNetCore;
 using ExulofraApi.Common.Abstractions;
 using ExulofraApi.Infrastructure;
 
-namespace ExulofraApi.Extensions;
+namespace ExulofraApi.DependencyInjection;
 
 public static class PresentationExtensions
 {

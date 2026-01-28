@@ -1,8 +1,8 @@
 using System.Security.Claims;
 using MediatR;
 using ExulofraApi.Common.Abstractions;
+using ExulofraApi.Common.Extensions;
 using ExulofraApi.Common.Models;
-using ExulofraApi.Extensions;
 
 namespace ExulofraApi.Features.Auth.Me;
 

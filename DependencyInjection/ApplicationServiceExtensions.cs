@@ -1,7 +1,7 @@
 using FluentValidation;
 using ExulofraApi.Common.Behaviors;
 
-namespace ExulofraApi.Extensions;
+namespace ExulofraApi.DependencyInjection;
 
 public static class ApplicationServiceExtensions
 {

@@ -9,7 +9,7 @@ using ExulofraApi.Common.Authorization;
 using ExulofraApi.Domain.Constants;
 using ExulofraApi.Infrastructure.Authentication;
 
-namespace ExulofraApi.Extensions;
+namespace ExulofraApi.DependencyInjection;
 
 public static class IdentityServicesExtension
 {
