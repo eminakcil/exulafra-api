@@ -4,7 +4,7 @@ using ExulofraApi.Infrastructure.Persistence.Interceptors;
 
 namespace ExulofraApi.DependencyInjection;
 
-public static class DatabaseExtension
+public static class PersistenceServiceExtensions
 {
     public static IServiceCollection AddPersistenceServices(
         this IServiceCollection services,

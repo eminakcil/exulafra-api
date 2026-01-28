@@ -1,4 +1,5 @@
 using ExulofraApi.Common.Abstractions;
+using ExulofraApi.Domain.Constants;
 
 namespace ExulofraApi.Domain.Entities;
 
@@ -22,6 +23,9 @@ public sealed class User : BaseEntity
     {
         if (string.IsNullOrWhiteSpace(email))
             throw new ArgumentNullException(nameof(email));
+
+        if (role != Roles.Admin && role != Roles.User)
+            throw new ArgumentException("Geçersiz rol.", nameof(role));
 
         Id = Guid.NewGuid();
         Email = email;
