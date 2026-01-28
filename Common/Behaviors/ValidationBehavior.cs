@@ -25,26 +25,6 @@ public class ValidationBehavior<TRequest, TResponse>(IEnumerable<IValidator<TReq
 
         if (failures.Count != 0)
         {
-            if (
-                typeof(TResponse).IsGenericType
-                && typeof(TResponse).GetGenericTypeDefinition() == typeof(Result<>)
-            )
-            {
-                var validationError = new Error(
-                    ErrorType.Validation,
-                    "Validasyon hatası oluştu.",
-                    failures
-                        .GroupBy(x => x.PropertyName)
-                        .ToDictionary(g => g.Key, g => g.Select(x => x.ErrorMessage).ToArray())
-                );
-
-                return (TResponse)
-                    typeof(Result<>)
-                        .MakeGenericType(typeof(TResponse).GetGenericArguments()[0])
-                        .GetMethod("Failure")!
-                        .Invoke(null, [validationError])!;
-            }
-
             throw new ValidationException(failures);
         }
 
