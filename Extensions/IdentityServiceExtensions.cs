@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using ExulofraApi.Common.Abstractions;
 using ExulofraApi.Common.Authorization;
-using ExulofraApi.Common.Constants;
+using ExulofraApi.Domain.Constants;
 using ExulofraApi.Infrastructure.Authentication;
 
 namespace ExulofraApi.Extensions;

@@ -1,4 +1,4 @@
-namespace ExulofraApi.Common.Constants;
+namespace ExulofraApi.Domain.Constants;
 
 public static class Roles
 {
