@@ -5,10 +5,37 @@ namespace ExulofraApi.Domain.Entities;
 
 public sealed class User : BaseEntity
 {
-    public string Email { get; set; } = string.Empty;
-    public string PasswordHash { get; set; } = string.Empty;
+    public string Email { get; private set; }
+    public string PasswordHash { get; private set; }
+    public string Role { get; private set; }
 
-    public string? RefreshToken { get; set; }
-    public DateTimeOffset? RefreshTokenExpiryTime { get; set; }
-    public string Role { get; set; } = Roles.User;
+    public string? RefreshToken { get; private set; }
+    public DateTimeOffset? RefreshTokenExpiryTime { get; private set; }
+
+    private User()
+    {
+        Email = null!;
+        PasswordHash = null!;
+        Role = null!;
+    }
+
+    public User(string email, string passwordHash, string role = "User")
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            throw new ArgumentNullException(nameof(email));
+
+        Id = Guid.NewGuid();
+        Email = email;
+        PasswordHash = passwordHash;
+        Role = role;
+    }
+
+    public void UpdateRefreshToken(string refreshToken, DateTimeOffset expiryTime)
+    {
+        if (string.IsNullOrWhiteSpace(refreshToken))
+            throw new ArgumentException("Refresh token boş olamaz.", nameof(refreshToken));
+
+        RefreshToken = refreshToken;
+        RefreshTokenExpiryTime = expiryTime;
+    }
 }

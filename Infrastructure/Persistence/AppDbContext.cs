@@ -13,6 +13,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     {
         base.OnModelCreating(modelBuilder);
 
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
             if (typeof(ISoftDelete).IsAssignableFrom(entityType.ClrType))
@@ -26,10 +28,5 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 modelBuilder.Entity(entityType.ClrType).HasQueryFilter(lambda);
             }
         }
-
-        modelBuilder.Entity<User>(builder =>
-        {
-            builder.HasIndex(u => u.Email).IsUnique();
-        });
     }
 }
