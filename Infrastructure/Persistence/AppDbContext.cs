@@ -3,7 +3,7 @@ namespace ExulofraApi.Infrastructure.Persistence;
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using ExulofraApi.Common.Abstractions;
-using ExulofraApi.Common.Entities;
+using ExulofraApi.Domain.Entities;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {

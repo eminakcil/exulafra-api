@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using ExulofraApi.Common.Abstractions;
 using ExulofraApi.Common.Constants;
-using ExulofraApi.Common.Entities;
+using ExulofraApi.Domain.Entities;
 
 namespace ExulofraApi.Infrastructure.Authentication;
 

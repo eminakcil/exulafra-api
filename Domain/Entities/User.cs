@@ -1,7 +1,7 @@
 using ExulofraApi.Common.Abstractions;
 using ExulofraApi.Common.Constants;
 
-namespace ExulofraApi.Common.Entities;
+namespace ExulofraApi.Domain.Entities;
 
 public sealed class User : BaseEntity
 {

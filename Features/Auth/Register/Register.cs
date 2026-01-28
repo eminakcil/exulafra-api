@@ -2,7 +2,7 @@ using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using ExulofraApi.Common.Abstractions;
-using ExulofraApi.Common.Entities;
+using ExulofraApi.Domain.Entities;
 using ExulofraApi.Common.Models;
 using ExulofraApi.Extensions;
 using ExulofraApi.Infrastructure.Persistence;

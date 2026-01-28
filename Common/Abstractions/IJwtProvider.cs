@@ -1,4 +1,4 @@
-using ExulofraApi.Common.Entities;
+using ExulofraApi.Domain.Entities;
 
 namespace ExulofraApi.Common.Abstractions;
 
