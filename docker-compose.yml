@@ -1,0 +1,38 @@
+services:
+  exulofra-db:
+    image: postgres:16-alpine
+    container_name: exulofra_db
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=pass
+      - POSTGRES_DB=exulofra_dev_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - exulofra-network
+
+  api-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: exulofra_api_container
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=exulofra-db;Database=exulofra_dev_db;Username=admin;Password=pass
+    ports:
+      - "5164:80"
+    depends_on:
+      - exulofra-db
+    volumes:
+      - ./appsettings.json:/app/appsettings.json
+    networks:
+      - exulofra-network
+
+networks:
+  exulofra-network:
+    driver: bridge
+
+volumes:
+  pgdata:

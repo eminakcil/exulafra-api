@@ -1,5 +1,5 @@
-using Serilog;
 using ExulofraApi.DependencyInjection;
+using Serilog;
 
 Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateBootstrapLogger();
 
@@ -26,6 +26,8 @@ try
         .AddHttpContextAccessor();
 
     var app = builder.Build();
+
+    app.ApplyMigrations();
 
     app.ConfigurePipeline();
 

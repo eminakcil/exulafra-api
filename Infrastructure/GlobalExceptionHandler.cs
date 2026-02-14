@@ -1,6 +1,6 @@
+using ExulofraApi.Common.Models;
 using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
-using ExulofraApi.Common.Models;
 
 namespace ExulofraApi.Infrastructure;
 

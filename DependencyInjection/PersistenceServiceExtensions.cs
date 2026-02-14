@@ -1,6 +1,6 @@
-using Microsoft.EntityFrameworkCore;
 using ExulofraApi.Infrastructure.Persistence;
 using ExulofraApi.Infrastructure.Persistence.Interceptors;
+using Microsoft.EntityFrameworkCore;
 
 namespace ExulofraApi.DependencyInjection;
 
@@ -21,7 +21,7 @@ public static class PersistenceServiceExtensions
                 var softDeleteInterceptor = sp.GetRequiredService<SoftDeleteInterceptor>();
 
                 options
-                    .UseInMemoryDatabase("ExulofraDb")
+                    .UseNpgsql(config.GetConnectionString("DefaultConnection"))
                     .AddInterceptors(auditInterceptor, softDeleteInterceptor);
             }
         );

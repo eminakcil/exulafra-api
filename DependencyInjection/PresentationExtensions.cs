@@ -1,9 +1,9 @@
 using System.Reflection;
+using ExulofraApi.Common.Abstractions;
+using ExulofraApi.Infrastructure;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Scalar.AspNetCore;
-using ExulofraApi.Common.Abstractions;
-using ExulofraApi.Infrastructure;
 
 namespace ExulofraApi.DependencyInjection;
 
@@ -21,6 +21,8 @@ public static class PresentationExtensions
 
     public static WebApplication ConfigurePipeline(this WebApplication app)
     {
+        app.UsePathBase("/api");
+
         app.UseExceptionHandler();
 
         if (app.Environment.IsDevelopment())
