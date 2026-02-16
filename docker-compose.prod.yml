@@ -1,0 +1,11 @@
+services:
+  api-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Host=exulofra-db;Database=exulofra_dev_db;Username=admin;Password=pass
+    restart: always
+    volumes:
+      - ./appsettings.json:/app/appsettings.json

@@ -1,0 +1,10 @@
+services:
+  api-service:
+    image: mcr.microsoft.com/dotnet/sdk:10.0
+    working_dir: /app
+    command: dotnet watch run --urls=http://+:80
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=exulofra-db;Database=exulofra_dev_db;Username=admin;Password=pass
+    volumes:
+      - .:/app

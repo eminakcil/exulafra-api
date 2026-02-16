@@ -14,19 +14,11 @@ services:
       - exulofra-network
 
   api-service:
-    build:
-      context: .
-      dockerfile: Dockerfile
     container_name: exulofra_api_container
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Host=exulofra-db;Database=exulofra_dev_db;Username=admin;Password=pass
     ports:
       - "5164:80"
     depends_on:
       - exulofra-db
-    volumes:
-      - ./appsettings.json:/app/appsettings.json
     networks:
       - exulofra-network
 
