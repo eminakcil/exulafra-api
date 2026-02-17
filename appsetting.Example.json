@@ -1,9 +1,6 @@
 {
   "Serilog": {
-    "Using": [
-      "Serilog.Sinks.Console",
-      "Serilog.Sinks.File"
-    ],
+    "Using": ["Serilog.Sinks.Console", "Serilog.Sinks.File"],
     "MinimumLevel": {
       "Default": "Information",
       "Override": {
@@ -23,17 +20,16 @@
         }
       }
     ],
-    "Enrich": [
-      "FromLogContext",
-      "WithMachineName",
-      "WithThreadId"
-    ]
+    "Enrich": ["FromLogContext", "WithMachineName", "WithThreadId"]
   },
   "AllowedHosts": "*",
   "Jwt": {
-    "Issuer": "ExulofraApi",
-    "Audience": "ExulofraApi",
+    "Issuer": "",
+    "Audience": "",
     "Key": "REPLACE_WITH_YOUR_SUPER_SECRET_KEY_AT_LEAST_32_CHARACTERS",
     "DurationInMinutes": 60
+  },
+  "ConnectionStrings": {
+    "DefaultConnection": ""
   }
 }
