@@ -1,20 +1,23 @@
-using FluentValidation;
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using ExulofraApi.Common.Abstractions;
 using ExulofraApi.Common.Extensions;
 using ExulofraApi.Common.Models;
 using ExulofraApi.Domain.Entities;
 using ExulofraApi.Infrastructure.Persistence;
+using FluentValidation;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
 using BC = BCrypt.Net.BCrypt;
 
 namespace ExulofraApi.Features.Auth.Register;
 
-public record RegisterCommand(string Email, string Password) : IRequest<Result<Guid>>;
+public record RegisterResponse(Guid Id);
 
-public class RegisterHandler(AppDbContext context) : IRequestHandler<RegisterCommand, Result<Guid>>
+public record RegisterCommand(string Email, string Password) : IRequest<Result<RegisterResponse>>;
+
+public class RegisterHandler(AppDbContext context)
+    : IRequestHandler<RegisterCommand, Result<RegisterResponse>>
 {
-    public async Task<Result<Guid>> Handle(
+    public async Task<Result<RegisterResponse>> Handle(
         RegisterCommand request,
         CancellationToken cancellationToken
     )
@@ -22,7 +25,9 @@ public class RegisterHandler(AppDbContext context) : IRequestHandler<RegisterCom
         var exists = await context.Users.AnyAsync(u => u.Email == request.Email, cancellationToken);
         if (exists)
         {
-            return Result<Guid>.Failure(Error.Conflict("Bu e-posta adresi zaten kullanımda."));
+            return Result<RegisterResponse>.Failure(
+                Error.Conflict("Bu e-posta adresi zaten kullanımda.")
+            );
         }
 
         var passwordHash = BC.HashPassword(request.Password);
@@ -31,7 +36,7 @@ public class RegisterHandler(AppDbContext context) : IRequestHandler<RegisterCom
         context.Users.Add(user);
         await context.SaveChangesAsync(cancellationToken);
 
-        return Result<Guid>.Success(user.Id);
+        return Result<RegisterResponse>.Success(new RegisterResponse(user.Id));
     }
 }
 
@@ -56,6 +61,7 @@ public class RegisterEndpoint : IEndpoint
                     return result.ToActionResult();
                 }
             )
-            .WithTags("Authentication");
+            .WithTags("Authentication")
+            .AllowAnonymous();
     }
 }

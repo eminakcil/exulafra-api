@@ -44,6 +44,6 @@ public class CreateSessionEndpoint : IEndpoint
             )
             .WithTags("Sessions")
             .WithSummary("Creates a new session for translation/dubbing")
-            .AllowAnonymous(); // Adjust authorization as needed
+            .RequireAuthorization();
     }
 }

@@ -76,6 +76,6 @@ public class StartTranslationEndpoint : IEndpoint
             )
             .WithTags("Translations")
             .WithSummary("Starts a new translation context")
-            .AllowAnonymous(); // Adjust authorization
+            .RequireAuthorization();
     }
 }
