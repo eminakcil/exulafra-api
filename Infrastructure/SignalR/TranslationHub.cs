@@ -1,3 +1,4 @@
+using ExulofraApi.Common.Abstractions;
 using Microsoft.AspNetCore.SignalR;
 
 namespace ExulofraApi.Infrastructure.SignalR;
@@ -5,10 +6,12 @@ namespace ExulofraApi.Infrastructure.SignalR;
 public class TranslationHub : Hub
 {
     private readonly ILogger<TranslationHub> _logger;
+    private readonly ISpeechService _speechService;
 
-    public TranslationHub(ILogger<TranslationHub> logger)
+    public TranslationHub(ILogger<TranslationHub> logger, ISpeechService speechService)
     {
         _logger = logger;
+        _speechService = speechService;
     }
 
     public async Task JoinSession(string sessionId)
@@ -28,11 +31,18 @@ public class TranslationHub : Hub
     {
         _logger.LogInformation($"Starting audio stream for translation {translationId}");
 
-        // TODO: Integrate with AzureSpeechService here to process the stream
-        await foreach (var chunk in audioStream)
+        try
         {
-            // Placeholder: Process audio chunk
-            // await _speechService.ProcessAudioChunkAsync(translationId, chunk);
+            await _speechService.ProcessAudioStreamAsync(translationId, audioStream);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Error processing audio stream for translation {TranslationId}",
+                translationId
+            );
+            throw;
         }
     }
 }

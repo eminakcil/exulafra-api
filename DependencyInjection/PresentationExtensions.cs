@@ -1,6 +1,7 @@
 using System.Reflection;
 using ExulofraApi.Common.Abstractions;
 using ExulofraApi.Infrastructure;
+using ExulofraApi.Infrastructure.SignalR;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Scalar.AspNetCore;
@@ -9,12 +10,32 @@ namespace ExulofraApi.DependencyInjection;
 
 public static class PresentationExtensions
 {
-    public static IServiceCollection AddPresentationServices(this IServiceCollection services)
+    public static IServiceCollection AddPresentationServices(
+        this IServiceCollection services,
+        IConfiguration configuration
+    )
     {
+        services.AddCors(options =>
+        {
+            options.AddPolicy(
+                "AllowAll",
+                policy =>
+                {
+                    policy
+                        .AllowAnyMethod()
+                        .AllowAnyHeader()
+                        .AllowCredentials()
+                        .SetIsOriginAllowed(origin => true);
+                }
+            );
+        });
+
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
 
         services.AddEndpoints(Assembly.GetExecutingAssembly());
+
+        services.AddInfrastructureServices(configuration);
 
         return services;
     }
@@ -33,11 +54,14 @@ public static class PresentationExtensions
 
         app.UseHttpsRedirection();
 
+        app.UseCors("AllowAll");
+
         app.UseAuthentication();
         app.UseRateLimiter();
         app.UseAuthorization();
 
         app.MapEndpoints();
+        app.MapHub<TranslationHub>("/translation-hub");
 
         return app;
     }

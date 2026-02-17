@@ -31,5 +31,9 @@
   },
   "ConnectionStrings": {
     "DefaultConnection": ""
+  },
+  "Azure": {
+    "SpeechKey": "",
+    "SpeechRegion": ""
   }
 }

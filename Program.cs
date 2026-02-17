@@ -22,7 +22,7 @@ try
         .AddApplicationServices()
         .AddIdentityServices(builder.Configuration)
         .AddOpenApi()
-        .AddPresentationServices()
+        .AddPresentationServices(builder.Configuration)
         .AddHttpContextAccessor();
 
     var app = builder.Build();
