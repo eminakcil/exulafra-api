@@ -9,6 +9,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 {
     public DbSet<User> Users => Set<User>();
     public DbSet<UserRefreshToken> UserRefreshTokens => Set<UserRefreshToken>();
+    public DbSet<Session> Sessions => Set<Session>();
+    public DbSet<Translation> Translations => Set<Translation>();
+    public DbSet<Segment> Segments => Set<Segment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
