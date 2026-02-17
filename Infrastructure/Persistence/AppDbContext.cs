@@ -1,13 +1,14 @@
 namespace ExulofraApi.Infrastructure.Persistence;
 
 using System.Linq.Expressions;
-using Microsoft.EntityFrameworkCore;
 using ExulofraApi.Common.Abstractions;
 using ExulofraApi.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
     public DbSet<User> Users => Set<User>();
+    public DbSet<UserRefreshToken> UserRefreshTokens => Set<UserRefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

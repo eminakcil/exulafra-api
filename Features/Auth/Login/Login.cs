@@ -1,10 +1,11 @@
-using FluentValidation;
-using MediatR;
-using Microsoft.EntityFrameworkCore;
 using ExulofraApi.Common.Abstractions;
 using ExulofraApi.Common.Extensions;
 using ExulofraApi.Common.Models;
+using ExulofraApi.Domain.Entities;
 using ExulofraApi.Infrastructure.Persistence;
+using FluentValidation;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
 using BC = BCrypt.Net.BCrypt;
 
 namespace ExulofraApi.Features.Auth.Login;
@@ -33,7 +34,13 @@ public class LoginHandler(AppDbContext context, IJwtProvider jwtProvider)
 
         var tokenResponse = jwtProvider.Generate(user);
 
-        user.UpdateRefreshToken(tokenResponse.RefreshToken, DateTimeOffset.UtcNow.AddDays(7));
+        var refreshToken = new UserRefreshToken(
+            tokenResponse.RefreshToken,
+            DateTimeOffset.UtcNow.AddDays(7),
+            user.Id
+        );
+
+        user.RefreshTokens.Add(refreshToken);
 
         await context.SaveChangesAsync(cancellationToken);
 
