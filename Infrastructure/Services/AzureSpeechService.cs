@@ -1,5 +1,6 @@
 using System.Threading.Channels;
 using ExulofraApi.Common.Abstractions;
+using ExulofraApi.Domain.Entities;
 using ExulofraApi.Features.Translations.ProcessAudio.Events;
 using ExulofraApi.Infrastructure.Options;
 using ExulofraApi.Infrastructure.Persistence;
@@ -45,14 +46,42 @@ public class AzureSpeechService : ISpeechService
             _options.SpeechKey,
             _options.SpeechRegion
         );
-        translationConfig.SpeechRecognitionLanguage = config.SourceLang;
-        translationConfig.AddTargetLanguage(config.TargetLang);
 
         using var pushStream = AudioInputStream.CreatePushStream(
             AudioStreamFormat.GetWaveFormatPCM(16000, 16, 1)
         );
         using var audioConfig = AudioConfig.FromStreamInput(pushStream);
-        using var recognizer = new TranslationRecognizer(translationConfig, audioConfig);
+
+        TranslationRecognizer recognizer;
+
+        if (config.SessionType == SessionType.Dialogue)
+        {
+            translationConfig.SetProperty(
+                PropertyId.SpeechServiceConnection_LanguageIdMode,
+                "Continuous"
+            );
+
+            var autoDetectConfig = AutoDetectSourceLanguageConfig.FromLanguages([
+                config.SourceLang,
+                config.TargetLang,
+            ]);
+
+            translationConfig.AddTargetLanguage(config.SourceLang.Split('-')[0]);
+            translationConfig.AddTargetLanguage(config.TargetLang.Split('-')[0]);
+
+            recognizer = new TranslationRecognizer(
+                translationConfig,
+                autoDetectConfig,
+                audioConfig
+            );
+        }
+        else
+        {
+            translationConfig.SpeechRecognitionLanguage = config.SourceLang;
+            translationConfig.AddTargetLanguage(config.TargetLang.Split('-')[0]);
+
+            recognizer = new TranslationRecognizer(translationConfig, audioConfig);
+        }
 
         var stopTask = new TaskCompletionSource<int>();
         bool isUserConnected = true;
@@ -61,7 +90,7 @@ public class AzureSpeechService : ISpeechService
         Channel<TranslationPayload>? payloadChannel = null;
         Task? synthesisTask = null;
 
-        if (!config.IsMuted)
+        if (!config.IsMuted && config.SessionType != SessionType.Reporting)
         {
             var synthConfig = SpeechConfig.FromSubscription(
                 _options.SpeechKey,
@@ -115,11 +144,6 @@ public class AzureSpeechService : ISpeechService
             var partialText = e.Result.Translations.Values.FirstOrDefault() ?? e.Result.Text;
             if (!string.IsNullOrWhiteSpace(partialText))
             {
-                _logger.LogDebug(
-                    "Partial recognition. TranslationId: {TranslationId}, Text: {Text}",
-                    translationId,
-                    partialText
-                );
                 _publisher.Publish(
                     new PartialTextRecognizedEvent(Guid.Parse(translationId), partialText)
                 );
@@ -133,14 +157,38 @@ public class AzureSpeechService : ISpeechService
 
             if (e.Result.Reason == ResultReason.TranslatedSpeech)
             {
-                var finalTranslation = e.Result.Translations.Values.FirstOrDefault();
-                var sourceText = e.Result.Text;
+                string sourceText = e.Result.Text;
+                string finalTranslation = string.Empty;
+                string speakerTag = "Speaker";
+
+                if (config.SessionType == SessionType.Dialogue)
+                {
+                    var detectedLang = e.Result.Properties.GetProperty(
+                        PropertyId.SpeechServiceConnection_AutoDetectSourceLanguageResult
+                    );
+
+                    var targetLangKey =
+                        detectedLang == config.SourceLang
+                            ? config.TargetLang.Split('-')[0]
+                            : config.SourceLang.Split('-')[0];
+
+                    if (e.Result.Translations.ContainsKey(targetLangKey))
+                    {
+                        finalTranslation = e.Result.Translations[targetLangKey];
+                    }
+
+                    speakerTag = detectedLang ?? "Unknown";
+                }
+                else
+                {
+                    finalTranslation =
+                        e.Result.Translations.Values.FirstOrDefault() ?? string.Empty;
+                }
 
                 if (!string.IsNullOrWhiteSpace(finalTranslation))
                 {
                     var segmentId = Guid.CreateVersion7();
                     var timestamp = TimeSpan.FromTicks(e.Result.OffsetInTicks);
-                    var speakerTag = "Speaker";
 
                     _logger.LogInformation(
                         "Segment recognized. TranslationId: {TranslationId}, SegmentId: {SegmentId}, Offset: {Offset}",
@@ -160,7 +208,11 @@ public class AzureSpeechService : ISpeechService
                         )
                     );
 
-                    if (!config.IsMuted && payloadChannel != null)
+                    if (
+                        !config.IsMuted
+                        && config.SessionType != SessionType.Reporting
+                        && payloadChannel != null
+                    )
                     {
                         payloadChannel.Writer.TryWrite(
                             new TranslationPayload(segmentId, finalTranslation)
@@ -199,8 +251,14 @@ public class AzureSpeechService : ISpeechService
             pushStream.Close();
 
             await recognizer.StopContinuousRecognitionAsync();
+            recognizer.Dispose();
 
-            if (!config.IsMuted && payloadChannel != null && synthesisTask != null)
+            if (
+                !config.IsMuted
+                && config.SessionType != SessionType.Reporting
+                && payloadChannel != null
+                && synthesisTask != null
+            )
             {
                 payloadChannel.Writer.Complete();
                 await synthesisTask;
@@ -213,7 +271,8 @@ public class AzureSpeechService : ISpeechService
         string SourceLang,
         string TargetLang,
         string TargetVoice,
-        bool IsMuted
+        bool IsMuted,
+        SessionType SessionType
     )> GetTranslationConfigAsync(string id)
     {
         using var scope = _scopeFactory.CreateScope();
@@ -221,11 +280,15 @@ public class AzureSpeechService : ISpeechService
 
         if (Guid.TryParse(id, out var gId))
         {
-            var t = await context.Translations.AsNoTracking().FirstOrDefaultAsync(x => x.Id == gId);
+            var t = await context
+                .Translations.Include(x => x.Session)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == gId);
+
             if (t != null)
-                return (t.SourceLang, t.TargetLang, t.TargetVoice, t.IsMuted);
+                return (t.SourceLang, t.TargetLang, t.TargetVoice, t.IsMuted, t.Session.Type);
         }
 
-        return ("en-US", "tr", "tr-TR-AhmetNeural", false);
+        return ("en-US", "tr-TR", "tr-TR-AhmetNeural", false, SessionType.Dubbing);
     }
 }
