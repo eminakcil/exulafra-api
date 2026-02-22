@@ -48,10 +48,6 @@ public class AzureSpeechService : ISpeechService
         translationConfig.SpeechRecognitionLanguage = config.SourceLang;
         translationConfig.AddTargetLanguage(config.TargetLang);
 
-        var synthConfig = SpeechConfig.FromSubscription(_options.SpeechKey, _options.SpeechRegion);
-        synthConfig.SpeechSynthesisVoiceName = config.TargetVoice;
-
-        using var synthesizer = new SpeechSynthesizer(synthConfig, null);
         using var pushStream = AudioInputStream.CreatePushStream(
             AudioStreamFormat.GetWaveFormatPCM(16000, 16, 1)
         );
@@ -61,7 +57,58 @@ public class AzureSpeechService : ISpeechService
         var stopTask = new TaskCompletionSource<int>();
         bool isUserConnected = true;
 
-        var payloadChannel = Channel.CreateUnbounded<TranslationPayload>();
+        SpeechSynthesizer? synthesizer = null;
+        Channel<TranslationPayload>? payloadChannel = null;
+        Task? synthesisTask = null;
+
+        if (!config.IsMuted)
+        {
+            var synthConfig = SpeechConfig.FromSubscription(
+                _options.SpeechKey,
+                _options.SpeechRegion
+            );
+            synthConfig.SpeechSynthesisVoiceName = config.TargetVoice;
+            synthesizer = new SpeechSynthesizer(synthConfig, null);
+            payloadChannel = Channel.CreateUnbounded<TranslationPayload>();
+
+            synthesisTask = Task.Run(async () =>
+            {
+                await foreach (var payload in payloadChannel.Reader.ReadAllAsync())
+                {
+                    var result = await synthesizer.SpeakTextAsync(payload.Text);
+
+                    if (result.Reason == ResultReason.SynthesizingAudioCompleted)
+                    {
+                        string fileName = $"final_{translationId}_{payload.Id}.wav";
+                        await File.WriteAllBytesAsync(fileName, result.AudioData);
+
+                        _logger.LogInformation(
+                            "Audio synthesized successfully. TranslationId: {TranslationId}, SegmentId: {SegmentId}",
+                            translationId,
+                            payload.Id
+                        );
+
+                        await _publisher.Publish(
+                            new AudioSynthesizedEvent(
+                                Guid.Parse(translationId),
+                                payload.Id,
+                                fileName
+                            )
+                        );
+                    }
+                    else if (result.Reason == ResultReason.Canceled)
+                    {
+                        var cancellation = SpeechSynthesisCancellationDetails.FromResult(result);
+                        _logger.LogError(
+                            "Audio synthesis canceled. TranslationId: {TranslationId}, Reason: {Reason}, ErrorDetails: {ErrorDetails}",
+                            translationId,
+                            cancellation.Reason,
+                            cancellation.ErrorDetails
+                        );
+                    }
+                }
+            });
+        }
 
         recognizer.Recognizing += (s, e) =>
         {
@@ -113,49 +160,18 @@ public class AzureSpeechService : ISpeechService
                         )
                     );
 
-                    payloadChannel.Writer.TryWrite(
-                        new TranslationPayload(segmentId, finalTranslation)
-                    );
+                    if (!config.IsMuted && payloadChannel != null)
+                    {
+                        payloadChannel.Writer.TryWrite(
+                            new TranslationPayload(segmentId, finalTranslation)
+                        );
+                    }
                 }
             }
         };
 
         recognizer.Canceled += (s, e) => stopTask.TrySetResult(0);
         recognizer.SessionStopped += (s, e) => stopTask.TrySetResult(0);
-
-        var synthesisTask = Task.Run(async () =>
-        {
-            await foreach (var payload in payloadChannel.Reader.ReadAllAsync())
-            {
-                var result = await synthesizer.SpeakTextAsync(payload.Text);
-
-                if (result.Reason == ResultReason.SynthesizingAudioCompleted)
-                {
-                    string fileName = $"final_{translationId}_{payload.Id}.wav";
-                    await File.WriteAllBytesAsync(fileName, result.AudioData);
-
-                    _logger.LogInformation(
-                        "Audio synthesized successfully. TranslationId: {TranslationId}, SegmentId: {SegmentId}",
-                        translationId,
-                        payload.Id
-                    );
-
-                    await _publisher.Publish(
-                        new AudioSynthesizedEvent(Guid.Parse(translationId), payload.Id, fileName)
-                    );
-                }
-                else if (result.Reason == ResultReason.Canceled)
-                {
-                    var cancellation = SpeechSynthesisCancellationDetails.FromResult(result);
-                    _logger.LogError(
-                        "Audio synthesis canceled. TranslationId: {TranslationId}, Reason: {Reason}, ErrorDetails: {ErrorDetails}",
-                        translationId,
-                        cancellation.Reason,
-                        cancellation.ErrorDetails
-                    );
-                }
-            }
-        });
 
         try
         {
@@ -184,15 +200,20 @@ public class AzureSpeechService : ISpeechService
 
             await recognizer.StopContinuousRecognitionAsync();
 
-            payloadChannel.Writer.Complete();
-            await synthesisTask;
+            if (!config.IsMuted && payloadChannel != null && synthesisTask != null)
+            {
+                payloadChannel.Writer.Complete();
+                await synthesisTask;
+                synthesizer?.Dispose();
+            }
         }
     }
 
     private async Task<(
         string SourceLang,
         string TargetLang,
-        string TargetVoice
+        string TargetVoice,
+        bool IsMuted
     )> GetTranslationConfigAsync(string id)
     {
         using var scope = _scopeFactory.CreateScope();
@@ -202,9 +223,9 @@ public class AzureSpeechService : ISpeechService
         {
             var t = await context.Translations.AsNoTracking().FirstOrDefaultAsync(x => x.Id == gId);
             if (t != null)
-                return (t.SourceLang, t.TargetLang, t.TargetVoice);
+                return (t.SourceLang, t.TargetLang, t.TargetVoice, t.IsMuted);
         }
 
-        return ("en-US", "tr", "tr-TR-AhmetNeural");
+        return ("en-US", "tr", "tr-TR-AhmetNeural", false);
     }
 }
