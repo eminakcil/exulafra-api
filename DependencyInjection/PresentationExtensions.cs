@@ -61,7 +61,7 @@ public static class PresentationExtensions
         app.UseAuthorization();
 
         app.MapEndpoints();
-        app.MapHub<TranslationHub>("/translation-hub");
+        app.MapHub<TranslationHub>("/translation-hub").RequireAuthorization();
 
         return app;
     }
