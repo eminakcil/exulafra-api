@@ -1,7 +1,6 @@
 using ExulofraApi.Common.Abstractions;
 using ExulofraApi.Infrastructure.Options;
 using ExulofraApi.Infrastructure.Services;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace ExulofraApi.DependencyInjection;
 
@@ -14,10 +13,12 @@ public static class InfrastructureServiceExtensions
     {
         services.Configure<AzureOptions>(configuration.GetSection(AzureOptions.SectionName));
 
-        services.AddSignalR(options =>
-        {
-            options.EnableDetailedErrors = true;
-        }); // .AddMessagePackProtocol(); // access to messagepack?
+        services
+            .AddSignalR(options =>
+            {
+                options.EnableDetailedErrors = true;
+            })
+            .AddMessagePackProtocol();
 
         services.AddScoped<ISpeechService, AzureSpeechService>();
 
