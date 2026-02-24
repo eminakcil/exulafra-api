@@ -141,11 +141,47 @@ public class AzureSpeechService : ISpeechService
 
         recognizer.Recognizing += (s, e) =>
         {
-            var partialText = e.Result.Translations.Values.FirstOrDefault() ?? e.Result.Text;
-            if (!string.IsNullOrWhiteSpace(partialText))
+            if (!isUserConnected)
+                return;
+
+            string sourceText = e.Result.Text;
+            string partialTranslation = string.Empty;
+            string speakerTag = "Speaker";
+
+            if (!string.IsNullOrWhiteSpace(sourceText))
             {
+                if (config.SessionType == SessionType.Dialogue)
+                {
+                    var detectedLang = e.Result.Properties.GetProperty(
+                        PropertyId.SpeechServiceConnection_AutoDetectSourceLanguageResult
+                    );
+
+                    var targetLangKey =
+                        detectedLang == config.SourceLang
+                            ? config.TargetLang.Split('-')[0]
+                            : config.SourceLang.Split('-')[0];
+
+                    if (e.Result.Translations.ContainsKey(targetLangKey))
+                    {
+                        partialTranslation = e.Result.Translations[targetLangKey];
+                    }
+
+                    speakerTag = detectedLang ?? "Unknown";
+                }
+                else
+                {
+                    partialTranslation =
+                        e.Result.Translations.Values.FirstOrDefault() ?? string.Empty;
+                    speakerTag = config.SourceLang;
+                }
+
                 _publisher.Publish(
-                    new PartialTextRecognizedEvent(Guid.Parse(translationId), partialText)
+                    new PartialTextRecognizedEvent(
+                        Guid.Parse(translationId),
+                        sourceText,
+                        partialTranslation,
+                        speakerTag
+                    )
                 );
             }
         };

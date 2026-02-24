@@ -17,7 +17,16 @@ public class ProcessAudioSignalRHandlers(IHubContext<TranslationHub> hubContext)
     {
         await hubContext
             .Clients.Group(notification.TranslationId.ToString())
-            .SendAsync("ReceivePartial", notification.Text, cancellationToken);
+            .SendAsync(
+                "ReceivePartial",
+                new
+                {
+                    sourceText = notification.SourceText,
+                    targetText = notification.TargetText,
+                    speakerTag = notification.SpeakerTag,
+                },
+                cancellationToken
+            );
     }
 
     public async Task Handle(
