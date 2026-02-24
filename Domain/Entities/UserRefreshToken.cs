@@ -11,6 +11,8 @@ public sealed class UserRefreshToken : BaseEntity
     public DateTimeOffset? RevokedAt { get; set; }
     public string? ReplacedByToken { get; set; }
 
+    public User User { get; set; } = null!;
+
     public UserRefreshToken() { }
 
     public UserRefreshToken(string token, DateTimeOffset expires, Guid userId)

@@ -32,5 +32,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 modelBuilder.Entity(entityType.ClrType).HasQueryFilter(lambda);
             }
         }
+
+        modelBuilder
+            .Entity<UserRefreshToken>()
+            .HasOne(rt => rt.User)
+            .WithMany()
+            .HasForeignKey(rt => rt.UserId);
     }
 }

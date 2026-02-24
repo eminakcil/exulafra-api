@@ -19,7 +19,7 @@ public class RefreshTokenHandler(AppDbContext context, IJwtProvider jwtProvider)
     )
     {
         var existingRefreshToken = await context
-            .UserRefreshTokens.Include(rt => rt.UserId) // needed to get user for jwt generation? No, we need user for claims.
+            .UserRefreshTokens.Include(rt => rt.User) // needed to get user for jwt generation? No, we need user for claims.
             .FirstOrDefaultAsync(rt => rt.Token == request.RefreshToken, cancellationToken);
 
         if (existingRefreshToken is null)
@@ -45,11 +45,7 @@ public class RefreshTokenHandler(AppDbContext context, IJwtProvider jwtProvider)
             );
         }
 
-        // Get User to generate new JWT
-        var user = await context.Users.FindAsync(
-            new object[] { existingRefreshToken.UserId },
-            cancellationToken
-        );
+        var user = existingRefreshToken.User;
         if (user is null)
         {
             return Result<TokenResponse>.Failure(Error.Unauthorized("Kullanıcı bulunamadı."));
