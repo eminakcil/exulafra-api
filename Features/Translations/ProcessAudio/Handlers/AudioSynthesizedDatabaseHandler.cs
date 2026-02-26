@@ -20,7 +20,7 @@ public class AudioSynthesizedDatabaseHandler(AppDbContext context)
 
         if (segment != null)
         {
-            segment.AudioUrl = notification.AudioUrl;
+            segment.AudioUrl = notification.AudioBase64;
             await context.SaveChangesAsync(cancellationToken);
         }
     }

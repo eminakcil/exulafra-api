@@ -97,6 +97,11 @@ public class AzureSpeechService : ISpeechService
                 _options.SpeechRegion
             );
             synthConfig.SpeechSynthesisVoiceName = config.TargetVoice;
+
+            synthConfig.SetSpeechSynthesisOutputFormat(
+                SpeechSynthesisOutputFormat.Riff16Khz16BitMonoPcm
+            );
+
             synthesizer = new SpeechSynthesizer(synthConfig, null);
             payloadChannel = Channel.CreateUnbounded<TranslationPayload>();
 
@@ -108,11 +113,10 @@ public class AzureSpeechService : ISpeechService
 
                     if (result.Reason == ResultReason.SynthesizingAudioCompleted)
                     {
-                        string fileName = $"final_{translationId}_{payload.Id}.wav";
-                        await File.WriteAllBytesAsync(fileName, result.AudioData);
+                        string base64Audio = Convert.ToBase64String(result.AudioData);
 
                         _logger.LogInformation(
-                            "Audio synthesized successfully. TranslationId: {TranslationId}, SegmentId: {SegmentId}",
+                            "Audio synthesized and converted to Base64 successfully. TranslationId: {TranslationId}, SegmentId: {SegmentId}",
                             translationId,
                             payload.Id
                         );
@@ -121,7 +125,7 @@ public class AzureSpeechService : ISpeechService
                             new AudioSynthesizedEvent(
                                 Guid.Parse(translationId),
                                 payload.Id,
-                                fileName
+                                base64Audio
                             )
                         );
                     }

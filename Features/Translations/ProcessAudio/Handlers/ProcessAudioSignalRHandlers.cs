@@ -59,7 +59,7 @@ public class ProcessAudioSignalRHandlers(IHubContext<TranslationHub> hubContext)
             .SendAsync(
                 "ReceiveAudio",
                 notification.SegmentId,
-                notification.AudioUrl,
+                notification.AudioBase64,
                 cancellationToken
             );
     }
