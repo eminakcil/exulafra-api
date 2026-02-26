@@ -13,7 +13,7 @@ using Microsoft.Extensions.Options;
 
 namespace ExulofraApi.Infrastructure.Services;
 
-public record TranslationPayload(Guid Id, string Text);
+public record TranslationPayload(Guid Id, string Text, string VoiceName);
 
 public class AzureSpeechService : ISpeechService
 {
@@ -109,7 +109,18 @@ public class AzureSpeechService : ISpeechService
             {
                 await foreach (var payload in payloadChannel.Reader.ReadAllAsync())
                 {
-                    var result = await synthesizer.SpeakTextAsync(payload.Text);
+                    string escapedText = System.Security.SecurityElement.Escape(payload.Text);
+
+                    string ssml =
+                        $@"<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-US'>
+                                        <voice name='{payload.VoiceName}'>
+                                            <prosody rate='+15%' pitch='0%'>
+                                                {escapedText}
+                                            </prosody>
+                                        </voice>
+                                     </speak>";
+
+                    var result = await synthesizer.SpeakSsmlAsync(ssml);
 
                     if (result.Reason == ResultReason.SynthesizingAudioCompleted)
                     {
@@ -201,6 +212,9 @@ public class AzureSpeechService : ISpeechService
                 string finalTranslation = string.Empty;
                 string speakerTag = "Speaker";
 
+                // Varsayılan olarak TargetVoice atıyoruz (Dubbing gibi modlar için)
+                string voiceToUse = config.TargetVoice;
+
                 if (config.SessionType == SessionType.Dialogue)
                 {
                     var detectedLang = e.Result.Properties.GetProperty(
@@ -216,6 +230,12 @@ public class AzureSpeechService : ISpeechService
                     {
                         finalTranslation = e.Result.Translations[targetLangKey];
                     }
+
+                    // DİNAMİK SES SEÇİMİ:
+                    // Konuşan SourceLang (örn. Türkçe) ise, çeviri TargetLang (İngilizce) olacaktır -> TargetVoice kullan
+                    // Konuşan TargetLang (örn. İngilizce) ise, çeviri SourceLang (Türkçe) olacaktır -> SourceVoice kullan
+                    voiceToUse =
+                        detectedLang == config.SourceLang ? config.TargetVoice : config.SourceVoice;
 
                     speakerTag = detectedLang ?? "Unknown";
                 }
@@ -248,6 +268,15 @@ public class AzureSpeechService : ISpeechService
                         )
                     );
 
+                    if (string.IsNullOrWhiteSpace(voiceToUse))
+                    {
+                        voiceToUse = "en-US-JennyNeural";
+                        _logger.LogWarning(
+                            "Voice name was empty! Fallback applied for TranslationId: {TranslationId}",
+                            translationId
+                        );
+                    }
+
                     if (
                         !config.IsMuted
                         && config.SessionType != SessionType.Reporting
@@ -255,7 +284,7 @@ public class AzureSpeechService : ISpeechService
                     )
                     {
                         payloadChannel.Writer.TryWrite(
-                            new TranslationPayload(segmentId, finalTranslation)
+                            new TranslationPayload(segmentId, finalTranslation, voiceToUse)
                         );
                     }
                 }
@@ -310,6 +339,7 @@ public class AzureSpeechService : ISpeechService
     private async Task<(
         string SourceLang,
         string TargetLang,
+        string SourceVoice,
         string TargetVoice,
         bool IsMuted,
         SessionType SessionType
@@ -325,10 +355,27 @@ public class AzureSpeechService : ISpeechService
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == gId);
 
-            if (t != null)
-                return (t.SourceLang, t.TargetLang, t.TargetVoice, t.IsMuted, t.Session.Type);
-        }
+            System.Console.WriteLine(
+                $"{t.SourceLang}, {t.SourceVoice} | {t.TargetLang}, {t.TargetVoice}"
+            );
 
-        return ("en-US", "tr-TR", "tr-TR-AhmetNeural", false, SessionType.Dubbing);
+            if (t != null)
+                return (
+                    t.SourceLang,
+                    t.TargetLang,
+                    t.SourceVoice,
+                    t.TargetVoice,
+                    t.IsMuted,
+                    t.Session.Type
+                );
+        }
+        return (
+            "en-US",
+            "tr-TR",
+            "en-US-JennyNeural",
+            "tr-TR-AhmetNeural",
+            false,
+            SessionType.Dubbing
+        );
     }
 }

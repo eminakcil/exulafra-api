@@ -14,6 +14,7 @@ public record StartTranslationCommand(
     Guid SessionId,
     string SourceLang,
     string TargetLang,
+    string SourceVoice,
     string TargetVoice,
     bool IsMuted,
     string? InputAudioUrl = null,
@@ -42,6 +43,7 @@ public class StartTranslationHandler(AppDbContext context, ILogger<StartTranslat
         {
             SessionId = request.SessionId,
             SourceLang = request.SourceLang,
+            SourceVoice = request.SourceVoice,
             TargetLang = request.TargetLang,
             TargetVoice = request.TargetVoice,
             IsMuted = request.IsMuted,

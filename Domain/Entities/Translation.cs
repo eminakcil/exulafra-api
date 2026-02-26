@@ -7,6 +7,7 @@ public class Translation : BaseEntity
     public Guid SessionId { get; set; }
     public string SourceLang { get; set; } = string.Empty;
     public string TargetLang { get; set; } = string.Empty;
+    public string SourceVoice { get; set; } = string.Empty;
     public string TargetVoice { get; set; } = string.Empty;
     public string? InputAudioUrl { get; set; }
     public string? OutputAudioUrl { get; set; }
