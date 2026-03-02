@@ -58,7 +58,10 @@ public class GetSessionByIdHandler(AppDbContext context, IHttpContextAccessor ht
             .Sessions.AsNoTracking()
             .Include(s => s.Translations)
                 .ThenInclude(t => t.Segments)
-            .FirstOrDefaultAsync(s => s.Id == request.Id, cancellationToken);
+            .FirstOrDefaultAsync(
+                s => s.Id == request.Id && s.CreatorUserId == userId,
+                cancellationToken
+            );
 
         if (session is null)
         {

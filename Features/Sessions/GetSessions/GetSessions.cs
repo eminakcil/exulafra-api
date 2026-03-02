@@ -34,6 +34,7 @@ public class GetSessionsHandler(AppDbContext context, IHttpContextAccessor httpC
 
         var sessions = await context
             .Sessions.AsNoTracking()
+            .Where(s => s.CreatorUserId == userId)
             .OrderByDescending(s => s.CreatedAt)
             .Select(s => new SessionSummaryResponse(s.Id, s.Type, s.CreatedAt))
             .ToListAsync(cancellationToken);
