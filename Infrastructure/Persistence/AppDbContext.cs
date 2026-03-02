@@ -38,5 +38,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasOne(rt => rt.User)
             .WithMany()
             .HasForeignKey(rt => rt.UserId);
+
+        modelBuilder
+            .Entity<Session>()
+            .HasOne(s => s.Creator)
+            .WithMany()
+            .HasForeignKey(s => s.CreatorUserId)
+            .IsRequired();
     }
 }
